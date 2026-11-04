@@ -397,7 +397,7 @@
     }attributes.set(el,records);
    });
    document.documentElement.lang=language;
-   const button=document.getElementById('languageToggle');if(button){button.textContent=language==='pl'?'PL → EN':'EN → PL';button.setAttribute('aria-label',language==='pl'?'Switch to English':'Zmień język na polski');}
+   const button=document.getElementById('languageToggle');if(button){button.textContent=language==='pl'?'EN':'PL';button.setAttribute('aria-label',language==='pl'?'Switch to English':'Zmień język na polski');}
   }finally{observer?.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','title','alt']});}
  }
  function setLanguage(next){if(!['pl','en'].includes(next))return;language=next;try{localStorage.setItem(key,next);}catch{}
