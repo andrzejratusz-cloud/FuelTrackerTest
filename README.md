@@ -77,3 +77,19 @@ W formularzu wydatku: Zeskanuj paragon otwiera aparat na obsługiwanych telefona
 Koszt końcowy paragonu i litry są wpisywane w formularz, bez automatycznego zapisania wydatku. Gdy użytkownik zmieni pola podczas OCR, musi nacisnąć Uzupełnij pola wynikiem OCR. Kilka różnych kwot lub litrów nie jest automatycznie wybierane. Suma paragonu może obejmować zakupy dodatkowe — sprawdź ją przed zapisem. OCR nie ustala przebiegu, samochodu ani pełnego baku. Dostępny podgląd zdjęcia i odczytanego tekstu oraz anulowanie. Zamknięcie formularza usuwa podgląd i zatrzymuje odczyt. Zdjęcia do 25 MB, obsługa formatu zależy od przeglądarki; przy problemach wybierz JPG/PNG.
 
 Do publikacji v27 ze starszej wersji: index.html, sw.js i nowy receipt.js. Pozostaw pozostałe pliki aplikacji. Sprawdzono 23 przypadki parsera i 13 przypadków formularza z modelem OCR. Pliki silnika/modeli odpowiadają HTTP 200. Nie przeprowadzono testu rzeczywistej kamery ani skuteczności OCR na fizycznym telefonie.
+
+## v28 — OCR pól SUMA / Ilość / Data / Przebieg, HEIC
+
+Parser obsługuje SUMA bez dopisku PLN, wiersze pod nagłówkiem Cena jm Ilość VAT Wartość dla paliwa, daty ISO i DD.MM.RRRR oraz licznik oznaczony Przebieg. Dla przykładu klienta: 128,05 zł; 20,67 l; 2026-04-01; 45000 km. Rozbieżne wartości nie są automatycznie wybierane. Wszystkie cztery pola są uzupełniane w formularzu; zmiana ręczna w czasie OCR wymaga potwierdzenia Uzupełnij pola wynikiem OCR.
+
+HEIC/HEIF jest najpierw otwierany natywnie; w razie błędu pobieramy heic2any 0.0.4 z CDN i konwertujemy lokalnie na JPG, bez wysyłania pliku. Rozszerzenie .HEIC działa także bez MIME. Konwerter nie obsługuje każdego wariantu HEIC; w razie niepowodzenia pojawia się prośba o JPG. Pierwsza konwersja wymaga internetu. Dodano ikonę przy Wybierz zdjęcie.
+
+Sprawdzono parser na tekście klienta i model formularza/konwersji HEIC. Nie otrzymano rzeczywistego pliku HEIC; rzeczywistego dekodowania i obrazu z telefonu nie zweryfikowano. Publikacja: index.html, receipt.js i sw.js.
+
+## v29 — poprawka HEIC
+
+Konwerter heic2any został zastąpiony heic-to 1.6.7 z nowszym libheif. Próba natywnego otwarcia ma limit czasu. Biblioteka pobierana na żądanie z jsDelivr, z zapasowym unpkg. Parametry nowej biblioteki: blob, type:image/jpeg, quality. Zdjęcie nadal jest dekodowane lokalnie. Błędy konwersji zawierają opis zamiast ogólnego komunikatu.
+
+Zweryfikowano rzeczywiste dekodowanie publicznego examples/example.heic z repozytorium strukturag/libheif nowym dekoderem: 1280x854 piksele, test w Node z adapterem Web Worker. Sprawdzono też model formularza i parser. Nie sprawdzono konkretnego pliku użytkownika ani wydajności na jego iPhonie.
+
+Publikacja: index.html, receipt.js, sw.js.
