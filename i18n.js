@@ -354,7 +354,12 @@
  "Przebieg oraz miesięczny dystans i litry.": "Odometer, monthly distance and litres.",
  "Integracja Google Analytics z wyborem zgody.": "Google Analytics integration with consent controls.",
  "Nowy układ formularza i limit netto/brutto.": "New form layout and net/gross budget limits.",
- "Wersja angielska i przełącznik PL / EN obok wyboru auta.": "English interface and a PL / EN switch next to the car selector."
+ "Wersja angielska i przełącznik PL / EN obok wyboru auta.": "English interface and a PL / EN switch next to the car selector.",
+ "Więcej": "More",
+ "Mniej": "Less",
+ "Wyliczenia:": "Calculations:",
+ "Krótszy nagłówek i zwijane informacje w About.": "Compact header and expandable About sections.",
+ "Kompaktowy przełącznik języka EN / PL.": "Compact EN / PL language switch."
 };
  const key='fuel-language-v1';let language='pl',observer=null,scheduled=false;
  try{if(localStorage.getItem(key)==='en')language='en';}catch{}
