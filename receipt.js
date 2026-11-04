@@ -4,7 +4,7 @@
  const decimal=s=>Number(s.replace(/\s/g,'').replace(',','.'));
  function parseReceipt(text){
   const lines=String(text).replace(/\u00a0/g,' ').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const totals=[],fuelCosts=[],volumes=[],dates=[],odometers=[];
+  const totals=[],fuelCosts=[],volumes=[],dates=[],odometers=[],tableRows=[],prices=[],derived=[];
   const normalized=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Ł/g,'L').toUpperCase();
   const dateValue=s=>{
    const m=s.match(/\b(\d{4})[-/.](\d{2})[-/.](\d{2})\b/),n=s.match(/\b(\d{2})[./-](\d{2})[./-](\d{4})\b/);
@@ -14,32 +14,41 @@
   const numbers=s=>[...s.matchAll(/\b\d{1,6}(?:[ \t]\d{3})*[,.]\d{2}\b/g)].map(m=>decimal(m[0])).filter(n=>n>0&&n<1000000);
   for(let i=0;i<lines.length;i++){
    const line=lines[i].toUpperCase().replace(/[Ł]/g,'L'),prev=lines[i-1]?.toUpperCase()||'';
-   if(/(?:\bSUMA\b|RAZEM\s*(?:PLN|ZL|DO\s*ZAPLATY)?|DO\s*ZAPLATY|TOTAL|KWOTA\s*DO)/.test(line)&&!/(?:PTU|PODATEK|VAT|RABAT)/.test(line)){
+   if(/(?:\bSUMA\b|RAZEM\s*(?:PLN|ZL|DO\s*ZAPLATY)?|DO\s*ZAPLATY|TOTAL|\bKWOTA\b)/.test(line)&&!/(?:PTU|PODATEK|VAT|RABAT)/.test(line)){
     const found=numbers(line);if(!found.length&&lines[i+1]&&!/(VAT|PTU|NIP)/i.test(lines[i+1]))found.push(...numbers(lines[i+1]));
     if(found.length)totals.push(found.at(-1));
    }
    // An explicit litre unit is mandatory: never mistake the unit price or VAT for volume.
    const units=[...line.matchAll(/\b(\d{1,4}(?:[,.]\d{1,3})?)\s*(?:L(?:ITR(?:Y|OW|ÓW)?)?|LTR)\b(?!\s*\/)/g)];
-   for(const match of units){const n=decimal(match[1]);if(n>0&&n<=2000&&!/(CENA|PLN\s*\/|ZL\s*\/)/.test(line.slice(0,match.index)))volumes.push(n);}
+   for(const match of units){if(lines.slice(Math.max(0,i-6),i).some(header=>/CENA.*JM.*ILOSC.*WARTOSC/.test(normalized(header))))continue;const n=decimal(match[1]);if(n>0&&n<=2000&&!/(CENA|PLN\s*\/|ZL\s*\/)/.test(line.slice(0,match.index)))volumes.push(n);}
    const isFuel=/(?:\bON\b|DIESEL|VERVA|EFECTA|BENZYNA|EUROSUPER|\bPB\s*9[58]\b|\bE\s*9[58]\b|\bLPG\b|PALIWO|FUEL)/.test(line+' '+prev);
    if(isFuel&&units.length){const amounts=[...line.matchAll(/\b\d{1,6}[,.]\d{2}(?=[A-Z]?(?:\s|$))/g)];const last=amounts.at(-1);const lastUnit=units.at(-1);if(last&&last.index>lastUnit.index+lastUnit[0].length&&/\s[X×*]\s*\d|\d\s*[X×*]\s*\d/.test(line)){const n=decimal(last[0]);if(n>0)fuelCosts.push(n);}}
    const clean=normalized(line);
+   if(/^WARTOSC\s*[:=]?\s*$/.test(clean)){const found=numbers(lines[i+1]||'');if(found.length===1)fuelCosts.push(found[0]);}
+   if(/CENA\s*(?:ZA\s*)?(?:LITR|1\s*L|\/\s*L)/.test(clean)){const found=numbers(line);if(found.length===1&&found[0]>=1&&found[0]<=30)prices.push(found[0]);}
    if(/\bDATA(?:\s*\/\s*CZAS)?\b/.test(clean)){
-    const value=dateValue(line)||(/^DATA\s*:?$/.test(clean)?dateValue(lines[i+1]||''):null);if(value)dates.push(value);
+    const value=dateValue(line)||(/^DATA(?:\s*\/\s*CZAS)?\s*:?$/.test(clean)?dateValue(lines[i+1]||''):null);if(value)dates.push(value);
    }
    if(/\bPRZEBIEG\b/.test(clean)){
     const source=clean.slice(clean.indexOf('PRZEBIEG')+8).trim()||lines[i+1]||'';
     const match=source.match(/^\s*[:=]?\s*(\d{1,3}(?:[ .]\d{3})+|\d{1,8})(?:\s*KM)?(?:\s|$)/);
     if(match){const n=Number(match[1].replace(/[ .]/g,''));if(Number.isFinite(n)&&n>=0&&n<100000000)odometers.push(n);}
    }
-   // Some fuel slips contain a table rather than an explicit "l" next to quantity.
-   // Header: Cena jm Ilość VAT Wartość. Amount is last; quantity precedes it.
+   // Read price / quantity / value as separate columns, even when one is damaged.
    if(/ILOSC/.test(clean)&&/WARTOSC/.test(clean)&&clean.indexOf('ILOSC')<clean.indexOf('WARTOSC')){
     for(let j=i+1;j<Math.min(lines.length,i+7);j++){
      const row=normalized(lines[j]);if(/\b(SUMA|RAZEM|POMPA|POTWIERDZENIE|DATA)\b/.test(row))break;
      if(!/(95|98|\bON\b|DIESEL|LPG|BENZYNA|PALIWO)/.test(row))continue;
-     const values=[...row.matchAll(/\b\d{1,6}[,.]\d{2,3}(?=[A-Z]?(?:\s|$))/g)].map(m=>decimal(m[0]));
-     if(values.length>=2){const qty=values.at(-2),amount=values.at(-1);if(qty>0&&qty<=2000&&amount/qty>=1&&amount/qty<=30)volumes.push(qty);}
+     const unit=row.match(/(?:^|\s)(?:T?L|LTR)["']?(?=\s|\d|$)/);
+     const vals=part=>[...part.matchAll(/\b\d{1,6}[,.]\d{2,3}(?=[A-Z]?(?:\s|$))/g)].map(m=>({n:decimal(m[0]),i:m.index,end:m.index+m[0].length}));
+     const left=unit?row.slice(0,unit.index):'',right=unit?row.slice(unit.index+unit[0].length):row;
+     const price=vals(left).at(-1)?.n,values=vals(right);let qty=null,amount=null;
+     if(values.length>=2){qty=values.at(-2).n;amount=values.at(-1).n;}
+     else if(values.length===1){const v=values[0];if(/\?{2,}|NIECZYTEL|BRAK/.test(right.slice(0,v.i)))amount=v.n;else if(/\?{2,}|NIECZYTEL|BRAK/.test(right.slice(v.end)))qty=v.n;else if(totals.includes(v.n))amount=v.n;}
+     if(qty>0&&qty<=2000)volumes.push(qty);
+     if(amount>0)fuelCosts.push(amount);
+     if(price>=1&&price<=30)prices.push(price);
+     tableRows.push({price:price>=1&&price<=30?price:null,qty,amount});
     }
    }
    if(/^ILOSC\s*[:=]?\s*(?:\d|$)/.test(clean)&&!/(VAT|WARTOSC|CENA)/.test(clean)){
@@ -48,8 +57,18 @@
    }
   }
   const unique=a=>[...new Set(a.map(n=>Math.round(n*1000)/1000))];
+  // Use two independently read values to calculate only the missing one.
+  const knownTotals=unique(totals),knownPrices=unique(prices);
+  for(const row of tableRows){
+   const amount=row.amount||(knownTotals.length===1&&tableRows.length===1?knownTotals[0]:null);
+   const price=row.price||(knownPrices.length===1?knownPrices[0]:null);
+   if(!row.qty&&amount&&price){const qty=Math.round(amount/price*1000)/1000;if(qty>0&&qty<=2000){volumes.push(qty);derived.push('Liczbę litrów obliczono jako wartość / cena za litr.');}}
+   if(!amount&&row.qty&&price){fuelCosts.push(Math.round(row.qty*price*100)/100);derived.push('Koszt obliczono jako litry × cena za litr.');}
+   if(amount&&row.qty&&price&&Math.abs(amount-row.qty*price)>.05)derived.push('Cena, ilość i wartość z tabeli nie są zgodne — sprawdź odczyt.');
+  }
+  if(!tableRows.length&&unique(volumes).length===0&&knownTotals.length===1&&knownPrices.length===1){const qty=Math.round(knownTotals[0]/knownPrices[0]*1000)/1000;if(qty>0&&qty<=2000){volumes.push(qty);derived.push('Liczbę litrów obliczono jako kwota / cena za litr.');}}
   const liters=unique(volumes),costs=unique(totals.length?totals:fuelCosts);
-  const warnings=[];if(costs.length>1)warnings.push('Odczytano kilka różnych kwot końcowych. Wpisz właściwy koszt ręcznie.');
+  const warnings=[...new Set(derived)];if(costs.length>1)warnings.push('Odczytano kilka różnych kwot końcowych. Wpisz właściwy koszt ręcznie.');
   if(liters.length>1)warnings.push('Odczytano kilka ilości paliwa. Wpisz właściwą liczbę litrów ręcznie.');
   if(costs.length===1&&fuelCosts.length&&fuelCosts.some(n=>Math.abs(n-costs[0])>.02))warnings.push('Suma paragonu różni się od kwoty paliwa — sprawdź, czy obejmuje inne zakupy.');
   const uniqueDates=[...new Set(dates)],uniqueOdometers=unique(odometers);

@@ -118,7 +118,7 @@
   }
   add('p','Zalogowano: '+session.user.email,'help');
   if(state){
-   add('p','Wspólny garaż'+(garageInfo?.name?': '+garageInfo.name:'')+'. '+(dirty()?'Oczekuje na synchronizację.':'Brak niewysłanych zmian.')+(state.syncedAt?' Ostatnio: '+new Date(state.syncedAt).toLocaleString('pl-PL'):'') ,'help');
+   add('p','Wspólny garaż'+(garageInfo?.name?': '+garageInfo.name:'')+'. '+(dirty()?'Oczekuje na synchronizację.':'Brak niewysłanych zmian.')+(state.syncedAt?' Ostatnio: '+new Date(state.syncedAt).toLocaleString((window.i18n?.locale()||'pl-PL')):'') ,'help');
    button('Synchronizuj teraz',()=>sync());
    if(conflict){
     add('p','Oba urządzenia zmieniły dane. W tej wersji wybierasz cały zestaw danych, nie pojedyncze wpisy. Najpierw pobierz kopię i porównaj zawartość.','help');

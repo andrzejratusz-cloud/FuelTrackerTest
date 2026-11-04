@@ -1,10 +1,10 @@
 'use strict';
 // Increase VERSION whenever app shell files change. Never cache user records.
-const VERSION = 'v29';
+const VERSION = 'v32';
 const ROOT = new URL('./', self.location.href);
 const PREFIX = 'fuel-tracker-shell-' + encodeURIComponent(ROOT.pathname) + '-';
 const CACHE = PREFIX + VERSION;
-const SHELL = ['index.html', 'manifest.webmanifest', 'pwa.js', 'analytics-config.js', 'analytics.js', 'sharing-config.js', 'sharing.js', 'receipt.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'].map(path => new URL(path, ROOT).href);
+const SHELL = ['index.html', 'i18n.js', 'manifest.webmanifest', 'pwa.js', 'analytics-config.js', 'analytics.js', 'sharing-config.js', 'sharing.js', 'receipt.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'].map(path => new URL(path, ROOT).href);
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
