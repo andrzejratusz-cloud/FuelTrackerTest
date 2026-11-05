@@ -2,6 +2,12 @@
 (() => {
  'use strict';
  const dictionary={
+ "— Uzupełnione release notes i numer wersji oraz krótsze nagłówki Ustawień i About.": "— Updated release notes and version number, with more compact Settings and About headings.",
+ "Uzupełnione release notes i numer wersji oraz krótsze nagłówki Ustawień i About.": "Updated release notes and version number, with more compact Settings and About headings.",
+ "— Prosta instrukcja współdzielenia w czterech krokach i usunięte oznaczenie eksperymentalne.": "— Simple four-step sharing instructions and removal of the experimental label.",
+ "Prosta instrukcja współdzielenia w czterech krokach i usunięte oznaczenie eksperymentalne.": "Simple four-step sharing instructions and removal of the experimental label.",
+ "— Włączone współdzielenie garażu i konfiguracja połączenia z Supabase.": "— Enabled garage sharing and configured the Supabase connection.",
+ "Włączone współdzielenie garażu i konfiguracja połączenia z Supabase.": "Enabled garage sharing and configured the Supabase connection.",
  "Twoje auto. Twoja kontrola.": "Your car. Your control.",
  "Brak samochodu": "No car",
  "Podsumowanie": "Overview",
