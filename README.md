@@ -117,3 +117,7 @@ Cztery kroki logowania, tworzenia garażu, zapraszania i dołączania w PL/EN. U
 ## v37 — release notes i nagłówki
 Uzupełniono wpisy v35–v37 i numer wersji About. Usunięto podpisy nad Ustawieniami i About oraz górny margines ich nagłówków. Publikacja: index.html, i18n.js i sw.js. Zachowano konfigurację Supabase.
 
+
+## v38 — kolejność historii
+Wpisy są sortowane malejąco według daty, a przy tej samej dacie w odwrotnej kolejności zapisu. Edycja zachowuje miejsce wpisu. Starsze dane korzystają z zachowanej kolejności w zbiorze; wcześniejszej kolejności przed dawnymi edycjami lub importem nie da się odtworzyć. Publikacja: index.html, i18n.js, sw.js.
+

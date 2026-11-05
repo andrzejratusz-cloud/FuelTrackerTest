@@ -2,6 +2,7 @@
 (() => {
  'use strict';
  const dictionary={
+ "Historia tego samego dnia pokazuje najpierw ostatnio dodany wpis. Edycja zachowuje kolejność.": "Entries on the same day show the most recently added first. Editing preserves their order.",
  "— Uzupełnione release notes i numer wersji oraz krótsze nagłówki Ustawień i About.": "— Updated release notes and version number, with more compact Settings and About headings.",
  "Uzupełnione release notes i numer wersji oraz krótsze nagłówki Ustawień i About.": "Updated release notes and version number, with more compact Settings and About headings.",
  "— Prosta instrukcja współdzielenia w czterech krokach i usunięte oznaczenie eksperymentalne.": "— Simple four-step sharing instructions and removal of the experimental label.",
