@@ -1,6 +1,6 @@
 'use strict';
 // Increase VERSION whenever app shell files change. Never cache user records.
-const VERSION = 'v34';
+const VERSION = 'v35';
 const ROOT = new URL('./', self.location.href);
 const PREFIX = 'fuel-tracker-shell-' + encodeURIComponent(ROOT.pathname) + '-';
 const CACHE = PREFIX + VERSION;
@@ -48,3 +48,4 @@ self.addEventListener('fetch', event => {
 self.addEventListener('message', event => {
  if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();
 });
+

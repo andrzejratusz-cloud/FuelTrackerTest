@@ -1,2 +1,3 @@
-// Optional experiment. Disable to return to local mode. Never use a secret/service_role key.
-window.FUEL_SHARING_CONFIG = Object.freeze({enabled:false,url:'',publicKey:''});
+// Public Supabase configuration. Never use a secret/service_role key here.
+window.FUEL_SHARING_CONFIG = Object.freeze({enabled:true,url:'https://klhwmmxfpvqaxlmpxlkp.supabase.co',publicKey:'sb_publishable__0bsnYW54NUcUXi6UYAFig_ZSas04vx'});
+
