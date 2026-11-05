@@ -109,3 +109,7 @@ Publikacja z v31: index.html, sw.js, i18n.js i sharing.js. Pozostaw pozostałe z
 ## v35 — konfiguracja Supabase
 Włączono współdzielenie i ustawiono publiczny klucz projektu. Wgraj sharing-config.js oraz sw.js pod dotychczasowym adresem aplikacji. Projekt wymaga uruchomienia schema.sql oraz konfiguracji Email/SMTP i szablonów kodu OTP. Nie zweryfikowano rzeczywistego logowania ani synchronizacji dwóch kont.
 
+
+## v36 — prostsza instrukcja współdzielenia
+Cztery kroki logowania, tworzenia garażu, zapraszania i dołączania w PL/EN. Usunięto oznaczenie eksperymentalne z interfejsu. Publikacja: index.html, sharing.js, i18n.js i sw.js. Konfiguracja Supabase z v35 zachowana.
+

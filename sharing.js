@@ -98,8 +98,12 @@
  function paint(){
   const root=document.getElementById('sharingModule');if(!root)return;root.replaceChildren();
   const add=(tag,text,cls)=>{const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;root.append(el);return el;};
-  add('h3','Współdzielenie aplikacji · eksperymentalne');
-  add('p','Opcjonalny wspólny garaż dla dwóch osób. Dane lokalne pozostają osobno. Logowanie nie przesyła danych do Google Analytics.','help');
+  add('h3','Współdzielenie aplikacji');
+  const instructions=add('ol','', 'help');
+  {const item=document.createElement('li');item.textContent="Podaj swój e-mail, kliknij „Wyślij kod” i zaloguj się kodem z wiadomości. Następnie wybierz „Utwórz garaż z moich danych”.";instructions.append(item);}
+  {const item=document.createElement('li');item.textContent="Podaj e-mail osoby, z którą chcesz współdzielić garaż, i kliknij „Zapisz zaproszenie”.";instructions.append(item);}
+  {const item=document.createElement('li');item.textContent="Druga osoba otwiera tę samą aplikację na swoim urządzeniu i loguje się własnym e-mailem, używając kodu z wiadomości.";instructions.append(item);}
+  {const item=document.createElement('li');item.textContent="Po zalogowaniu druga osoba wybiera „Odśwież zaproszenia”, a następnie „Dołącz” przy nazwie garażu.";instructions.append(item);}
   const status=add('p',message||(configured?'Tryb lokalny':'Moduł nie jest jeszcze podłączony. Wymaga projektu Supabase i konfiguracji administratora.'),'help');status.setAttribute('role','status');
   const input=(label,type='text')=>{const id='share-'+label.replace(/[^a-z]/gi,'');const l=add('label',label);l.htmlFor=id;const el=add('input','');el.id=id;el.type=type;return el;};
   const button=(text,fn,disabled=false)=>{const b=add('button',text,'secondary');b.type='button';b.disabled=busy||disabled;b.style.margin='10px 8px 0 0';b.onclick=fn;return b;};
