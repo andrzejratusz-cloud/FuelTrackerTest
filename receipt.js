@@ -87,7 +87,7 @@
   for (let index = 0; index < lines.length; index++) {
    const match = lines[index].match(fuelPattern);
    const tableHeader = lines.slice(Math.max(0,index-6),index).some(line => /CENA.*JM.*ILOSC.*WARTOSC/.test(line));
-   const damagedFuelName = !match && tableHeader && /(?:^|[\s"'])L{1,2}(?=[\s"']|[0-9])/.test(lines[index]) && !boundary.test(lines[index]);
+   const damagedFuelName = !match && tableHeader && /(?:^|[\s"'])T?L{1,2}(?=[\s"']|[0-9])/.test(lines[index]) && !/\b(?:SUMA|TOTAL|RAZEM|POMPA|DATA|PRZEBIEG|KARTA|NIP|PTU|MYJNIA|PARKING)\b/.test(lines[index]);
    if (!match && !damagedFuelName) continue;
    let row = match ? lines[index].slice(match.index + match[0].length) : lines[index];
    let reconstructed = false;
@@ -143,7 +143,10 @@
   const rows = parseFuelRows(text);
   const receiptTotal = legacy.receiptTotal;
   if (!rows.length) {
-   const confidence = legacy.cost !== null && !legacy.warnings.length && !/CENA.*JM.*ILOS[CĆ]/i.test(String(text)) ? 'medium' : 'low';
+   const normalizedText = String(text).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+   const hasFuelTable = /CENA.*JM.*ILOSC/.test(normalizedText);
+   const confidence = legacy.cost !== null && !legacy.warnings.length && !hasFuelTable ? 'medium' : 'low';
+   if (hasFuelTable) legacy.warnings.push('Nie odczytano wiarygodnie wiersza paliwa. Sprawdź litry i cenę na zdjęciu przed potwierdzeniem.');
    return {...legacy, receiptTotal, fuelTotal: legacy.liters !== null ? legacy.cost : null,
     pricePerLiter: null, fuelType: null, derivedFields: [], confidence};
   }
@@ -155,6 +158,7 @@
   const warnings = [];
   if (!row.valid) warnings.push('Cena, ilość i wartość z tabeli nie są zgodne — sprawdź odczyt.');
   if (row.derivedFields.length) warnings.push('Brakującą wartość obliczono pomocniczo. Potwierdź ją przed użyciem.');
+  if (!row.fuelType) warnings.push('Nazwa lub cena paliwa jest nieczytelna. Sprawdź litry i cenę na zdjęciu przed potwierdzeniem.');
   if (receiptTotal !== null && Math.abs(receiptTotal - row.fuelTotal) > 0.02) {
    warnings.push('Suma paragonu obejmuje inne zakupy. Koszt tankowania pochodzi z pozycji paliwa.');
   }
@@ -251,7 +255,7 @@
     else{$('receiptApply').hidden=false;$('receiptApply').onclick=fill;}
    }
    const summary=[parsed.confidence==='high'?'Pewność odczytu: wysoka':parsed.confidence==='medium'?'Pewność odczytu: średnia':'Pewność odczytu: niska — użyj przycisku, aby potwierdzić odczyt',parsed.pricePerLiter!==null?'Cena za litr: '+parsed.pricePerLiter.toFixed(2)+' zł/l':'',parsed.receiptTotal!==null?'Suma paragonu: '+parsed.receiptTotal.toFixed(2)+' zł':'',parsed.cost!==null?'Koszt: '+parsed.cost.toFixed(2)+' zł':'Nie rozpoznano jednoznacznie kosztu',parsed.liters!==null?'Paliwo: '+parsed.liters+' l':'Nie rozpoznano jednoznacznie liczby litrów',parsed.date!==null?'Data: '+parsed.date:'Nie rozpoznano daty',parsed.km!==null?'Przebieg: '+parsed.km+' km':'Nie rozpoznano przebiegu'];
-   message(summary.join('. ')+'. '+parsed.warnings.join(' ')+' Sprawdź pola przed zapisaniem. Tankowanie do pełna zaznacz samodzielnie.');
+   message(summary.filter(Boolean).join('. ')+'. '+parsed.warnings.join(' ')+' Sprawdź pola przed zapisaniem. Tankowanie do pełna zaznacz samodzielnie.');
   }catch(error){abandoned=true;if(token===generation)message(error.message||'Nie udało się odczytać paragonu. Uzupełnij dane ręcznie.');}
   finally{clearTimeout(timeout);if(activeWorker)await activeWorker.terminate().catch(()=>{});if(worker===activeWorker)worker=null;if(token===generation){scanBusy=false;$('receiptCancel').hidden=true;}}
  }

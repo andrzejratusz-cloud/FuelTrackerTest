@@ -2,6 +2,9 @@
 (() => {
  'use strict';
  const dictionary={
+ "Nie odczytano wiarygodnie wiersza paliwa. Sprawdź litry i cenę na zdjęciu przed potwierdzeniem.": "The fuel row could not be read reliably. Check litres and price against the photo before confirming.",
+ "Nazwa lub cena paliwa jest nieczytelna. Sprawdź litry i cenę na zdjęciu przed potwierdzeniem.": "The fuel name or price is unreadable. Check litres and price against the photo before confirming.",
+ "Uszkodzony wiersz paliwa wymaga potwierdzenia odczytu.": "A damaged fuel row requires confirmation of the reading.",
  "Cena za litr (zł/l)": "Price per litre (PLN/L)",
  "Pewność odczytu: wysoka": "Reading confidence: high",
  "Pewność odczytu: średnia": "Reading confidence: medium",

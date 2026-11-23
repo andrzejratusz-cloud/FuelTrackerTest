@@ -127,3 +127,8 @@ Parser wybiera wartość pozycji paliwowej i zwraca sumę paragonu osobno. Odczy
 Publikacja wymaga index.html, receipt.js, i18n.js i sw.js.
 Sprawdzono 7 referencyjnych paragonów BP, 13 wariantów błędów i regresje aplikacji, skanowania, trwałości, współdzielenia, PWA, języków i analityki. Rzeczywisty IMG_4775.jpg daje 128,05 zł i 20,62 l, a uszkodzona cena jest wyliczana pomocniczo jako 6,21 zł/l z niską pewnością. Nie wykonano fizycznego testu aparatu na iPhonie. Silnik używa tekstu OCR, rekonstrukcja nie korzysta ze współrzędnych bloków.
 
+
+## v42 — potwierdzenie uszkodzonego odczytu paliwa
+Test przeglądarkowy zwrócił wiersz 1ENI95-A B21 TL z błędną ilością 20,67 zamiast widocznych na zdjęciu 20,62. Parser rozpoznaje teraz uszkodzoną nazwę i jednostkę TL w tabeli. Wynik ma niską pewność i ostrzeżenie wymagające sprawdzenia zdjęcia. Zapasowa ścieżka rozpoznaje nagłówki z polskimi znakami i również wymaga potwierdzenia. Formularz nie jest automatycznie uzupełniany takim wynikiem. Weryfikację obejmuje dokładny tekst błędu z przeglądarki oraz test obsługi formularza.
+Publikacja wymaga index.html, receipt.js, i18n.js i sw.js. Nie poprawiamy arbitralnie odczytanej cyfry 7 na 2. Dla tego zdjęcia użytkownik powinien porównać odczyt z paragonem i wpisać 20,62 l oraz 6,21 zł/l.
+
