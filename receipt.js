@@ -2,7 +2,7 @@
 (() => {
  'use strict';
  const decimal=s=>Number(s.replace(/\s/g,'').replace(',','.'));
- function parseReceipt(text){
+ function parseLegacyReceipt(text){
   const lines=String(text).replace(/\u00a0/g,' ').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   const totals=[],fuelCosts=[],volumes=[],dates=[],odometers=[],tableRows=[],prices=[],derived=[];
   const normalized=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/Ł/g,'L').toUpperCase();
@@ -74,8 +74,94 @@
   const uniqueDates=[...new Set(dates)],uniqueOdometers=unique(odometers);
   if(uniqueDates.length>1)warnings.push('Odczytano różne daty. Wybierz właściwą datę ręcznie.');
   if(uniqueOdometers.length>1)warnings.push('Odczytano różne przebiegi. Wpisz właściwy przebieg ręcznie.');
-  return {cost:costs.length===1?costs[0]:null,liters:liters.length===1?liters[0]:null,date:uniqueDates.length===1?uniqueDates[0]:null,km:uniqueOdometers.length===1?uniqueOdometers[0]:null,warnings};
+  return {receiptTotal:knownTotals.length===1?knownTotals[0]:null,cost:costs.length===1?costs[0]:null,liters:liters.length===1?liters[0]:null,date:uniqueDates.length===1?uniqueDates[0]:null,km:uniqueOdometers.length===1?uniqueOdometers[0]:null,warnings};
  }
+
+ // Interpret only numeric cells after a recognised fuel name.
+ function parseFuelRows(text) {
+  const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/gi, 'l').toUpperCase();
+  const lines = String(text).split(/\r?\n/).map(normalize);
+  const fuelPattern = /\b(?:BEN[Z2S]?\s*[9G][58S]|PB\s*9[58S]|E\s*(?:10|5)|ON|D[I1]ESEL|VERVA(?:\s+ON)?|ULT[I1]MATE(?:\s+D[I1]ESEL)?|EFECTA\s*9[58]|EUROSUPER|BENZYNA|LPG|AUTOGAZ|PALIWO|FUEL)\b/;
+  const boundary = /\b(?:SUMA|TOTAL|RAZEM|POMPA|DATA|PRZEBIEG|KARTA|NIP|PTU|MYJNIA|PARKING)\b|^\d+\s+[A-Z]/;
+  const rows = [];
+  for (let index = 0; index < lines.length; index++) {
+   const match = lines[index].match(fuelPattern);
+   const tableHeader = lines.slice(Math.max(0,index-6),index).some(line => /CENA.*JM.*ILOSC.*WARTOSC/.test(line));
+   const damagedFuelName = !match && tableHeader && /(?:^|[\s"'])L{1,2}(?=[\s"']|[0-9])/.test(lines[index]) && !boundary.test(lines[index]);
+   if (!match && !damagedFuelName) continue;
+   let row = match ? lines[index].slice(match.index + match[0].length) : lines[index];
+   let reconstructed = false;
+   for (let offset = 1; offset <= 3 && index + offset < lines.length; offset++) {
+    const next = lines[index + offset];
+    if (boundary.test(next) || fuelPattern.test(next) || /ILOSC|WARTOSC/.test(next)) break;
+    if (!/[0-9OIS][,.][0-9OIS]|^\s*[LT]\s*$/.test(next)) break;
+    row += ' ' + next;
+    reconstructed = true;
+   }
+   const cells = [...row.matchAll(/[0-9OIS]+\s*[,.]\s*[0-9OIS]{1,3}(?![0-9OIS])/g)].map(cell => ({
+    value: Number(cell[0].replace(/\s/g, '').replace(/O/g, '0').replace(/I/g, '1').replace(/S/g, '5').replace(',', '.')),
+    index: cell.index,
+    end: cell.index + cell[0].length,
+    corrected: /[OIS]/.test(cell[0])
+   }));
+   let price = null, liters = null, amount = null;
+   const derivedFields = [];
+   if (cells.length === 3) {
+    const multiplication = /[X×*]/.test(row.slice(cells[0].end, cells[1].index));
+    [price, liters, amount] = multiplication
+     ? [cells[1].value, cells[0].value, cells[2].value]
+     : cells.map(cell => cell.value);
+   } else if (cells.length === 2) {
+    const missingBefore = /\?{2,}|BRAK|NIECZYTEL/.test(row.slice(0, cells[0].index)) || (damagedFuelName && /L/.test(row.slice(0,cells[0].index)));
+    const missingBetween = /\?{2,}|BRAK|NIECZYTEL/.test(row.slice(cells[0].end, cells[1].index));
+    const missingAfter = /\?{2,}|BRAK|NIECZYTEL/.test(row.slice(cells[1].end));
+    if (missingBefore) [liters, amount] = cells.map(cell => cell.value);
+    else if (missingBetween) [price, amount] = cells.map(cell => cell.value);
+    else if (missingAfter) [price, liters] = cells.map(cell => cell.value);
+    else continue;
+    if (price && amount) { liters = Math.round(amount / price * 1000) / 1000; derivedFields.push('liters'); }
+    else if (price && liters) { amount = Math.round(price * liters * 100) / 100; derivedFields.push('fuelTotal'); }
+    else if (liters && amount) { price = Math.round(amount / liters * 100) / 100; derivedFields.push('pricePerLiter'); }
+   } else continue;
+   if (!(price > 0 && price <= 30 && liters > 0 && liters <= 2000 && amount > 0 && amount < 1000000)) continue;
+   // Work in scaled integers. Allow the rounding uncertainty of printed cells.
+   const expectedCents = Math.round(Math.round(price * 1000) * Math.round(liters * 1000) / 10000);
+   const actualCents = Math.round(amount * 100);
+   const toleranceCents = Math.max(5, Math.ceil(liters * 0.5 + price * 0.5));
+   const valid = Math.abs(expectedCents - actualCents) <= toleranceCents;
+   rows.push({
+    fuelType: match ? match[0].replace(/\s/g, '') : null,
+    pricePerLiter: price, liters, fuelTotal: amount, derivedFields,
+    confidence: !valid || derivedFields.length || damagedFuelName ? 'low' : reconstructed || cells.some(cell => cell.corrected) || !/\bL\b/.test(row) ? 'medium' : 'high',
+    valid
+   });
+  }
+  return rows;
+ }
+ function parseReceipt(text) {
+  const legacy = parseLegacyReceipt(text);
+  const rows = parseFuelRows(text);
+  const receiptTotal = legacy.receiptTotal;
+  if (!rows.length) {
+   const confidence = legacy.cost !== null && !legacy.warnings.length && !/CENA.*JM.*ILOS[CĆ]/i.test(String(text)) ? 'medium' : 'low';
+   return {...legacy, receiptTotal, fuelTotal: legacy.liters !== null ? legacy.cost : null,
+    pricePerLiter: null, fuelType: null, derivedFields: [], confidence};
+  }
+  if (rows.length > 1) {
+   return {...legacy, cost:null, liters:null, fuelTotal:null, receiptTotal, pricePerLiter:null,
+    fuelType:null, derivedFields:[], confidence:'low', warnings:['Odczytano kilka pozycji paliwa. Wybierz dane ręcznie.']};
+  }
+  const row = rows[0];
+  const warnings = [];
+  if (!row.valid) warnings.push('Cena, ilość i wartość z tabeli nie są zgodne — sprawdź odczyt.');
+  if (row.derivedFields.length) warnings.push('Brakującą wartość obliczono pomocniczo. Potwierdź ją przed użyciem.');
+  if (receiptTotal !== null && Math.abs(receiptTotal - row.fuelTotal) > 0.02) {
+   warnings.push('Suma paragonu obejmuje inne zakupy. Koszt tankowania pochodzi z pozycji paliwa.');
+  }
+  warnings.push(...legacy.warnings.filter(warning => /daty|przebiegi/.test(warning)));
+  return {...legacy, ...row, cost:row.fuelTotal, receiptTotal, warnings};
+ }
+
  if(typeof module!=='undefined'&&module.exports){module.exports={parseReceipt};return;}
  let generation=0,worker=null,loading=null,heicLoading=null,scanBusy=false;
  const $=id=>document.getElementById(id);
@@ -155,14 +241,16 @@
     if(parsed.date!==null)$('date').value=parsed.date;
     if(parsed.km!==null)$('km').value=String(parsed.km);
     if(parsed.liters!==null){$('kind').value='fuel';$('liters').value=String(parsed.liters);$('kind').dispatchEvent(new Event('change',{bubbles:true}));}
-    $('cost').dispatchEvent(new Event('input',{bubbles:true}));$('liters').dispatchEvent(new Event('input',{bubbles:true}));$('receiptApply').hidden=true;
+    $('cost').dispatchEvent(new Event('input',{bubbles:true}));$('liters').dispatchEvent(new Event('input',{bubbles:true}));
+    if(parsed.pricePerLiter!==null){$('unitPrice').value=parsed.pricePerLiter.toFixed(2);$('unitPrice').textContent=parsed.pricePerLiter.toFixed(2);}
+    $('receiptApply').hidden=true;
    };
    const found=parsed.cost!==null||parsed.liters!==null||parsed.date!==null||parsed.km!==null;
    if(found){
-    if(Object.keys(before).every(id=>$(id).value===before[id]))fill();
+    if(parsed.confidence!=='low'&&Object.keys(before).every(id=>$(id).value===before[id]))fill();
     else{$('receiptApply').hidden=false;$('receiptApply').onclick=fill;}
    }
-   const summary=[parsed.cost!==null?'Koszt: '+parsed.cost.toFixed(2)+' zł':'Nie rozpoznano jednoznacznie kosztu',parsed.liters!==null?'Paliwo: '+parsed.liters+' l':'Nie rozpoznano jednoznacznie liczby litrów',parsed.date!==null?'Data: '+parsed.date:'Nie rozpoznano daty',parsed.km!==null?'Przebieg: '+parsed.km+' km':'Nie rozpoznano przebiegu'];
+   const summary=[parsed.confidence==='high'?'Pewność odczytu: wysoka':parsed.confidence==='medium'?'Pewność odczytu: średnia':'Pewność odczytu: niska — użyj przycisku, aby potwierdzić odczyt',parsed.pricePerLiter!==null?'Cena za litr: '+parsed.pricePerLiter.toFixed(2)+' zł/l':'',parsed.receiptTotal!==null?'Suma paragonu: '+parsed.receiptTotal.toFixed(2)+' zł':'',parsed.cost!==null?'Koszt: '+parsed.cost.toFixed(2)+' zł':'Nie rozpoznano jednoznacznie kosztu',parsed.liters!==null?'Paliwo: '+parsed.liters+' l':'Nie rozpoznano jednoznacznie liczby litrów',parsed.date!==null?'Data: '+parsed.date:'Nie rozpoznano daty',parsed.km!==null?'Przebieg: '+parsed.km+' km':'Nie rozpoznano przebiegu'];
    message(summary.join('. ')+'. '+parsed.warnings.join(' ')+' Sprawdź pola przed zapisaniem. Tankowanie do pełna zaznacz samodzielnie.');
   }catch(error){abandoned=true;if(token===generation)message(error.message||'Nie udało się odczytać paragonu. Uzupełnij dane ręcznie.');}
   finally{clearTimeout(timeout);if(activeWorker)await activeWorker.terminate().catch(()=>{});if(worker===activeWorker)worker=null;if(token===generation){scanBusy=false;$('receiptCancel').hidden=true;}}

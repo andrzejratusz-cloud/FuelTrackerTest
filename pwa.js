@@ -41,21 +41,40 @@
  });
  let status = 'Przygotowywanie trybu offline…';
  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+ const appleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent || '') ||
+   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
  const section = document.createElement('div');
  section.className = 'panel';
  section.style.marginTop = '18px';
- section.innerHTML = '<h3>Aplikacja PWA</h3><p class="help" id="pwaStatus" role="status"></p><div class="actions"><button class="primary" id="pwaInstall" hidden>Zainstaluj aplikację</button></div><p class="help">iPhone: otwórz adres HTTPS w Safari → Udostępnij → Dodaj do ekranu początkowego. Jeśli pojawi się opcja „Otwórz jako aplikację”, pozostaw ją włączoną. Następnie uruchom ikonę z ekranu i poczekaj na komunikat gotowości offline.</p><p class="help">Przed przejściem z pliku HTML lub innego adresu wyeksportuj dane, a potem zaimportuj je w zainstalowanej aplikacji. Przeglądarka i aplikacja mogą korzystać z oddzielnych danych. Nie usuwaj danych przeglądarki bez kopii.</p>';
+ section.innerHTML = '<h3>Aplikacja PWA</h3><p class="help" id="pwaStatus" role="status"></p><div class="actions"><button type="button" class="primary" id="pwaInstall" aria-controls="pwaShortcutHelp pwaAppleHelp" aria-expanded="false">Utwórz skrót na pulpicie</button></div><p class="help" id="pwaShortcutHelp" role="status" hidden></p><div class="help" id="pwaAppleHelp" hidden><p><strong>Jak dodać Fuel Tracker do ekranu początkowego</strong></p><ol><li>W Safari stuknij przycisk udostępniania (kwadrat ze strzałką w górę). Jeśli go nie widzisz, otwórz menu strony i wybierz „Udostępnij”.</li><li>Przewiń listę i wybierz „Dodaj do ekranu początkowego”. Jeśli tej opcji brakuje, stuknij „Edytuj czynności” na dole listy i dodaj ją.</li><li>Jeśli widzisz „Otwórz jako aplikację”, włącz tę opcję. Stuknij „Dodaj”.</li></ol></div><p class="help">Przed przejściem z pliku HTML lub innego adresu wyeksportuj dane, a potem zaimportuj je w zainstalowanej aplikacji. Przeglądarka i aplikacja mogą korzystać z oddzielnych danych. Nie usuwaj danych przeglądarki bez kopii.</p>';
  function update() {
    if (!section.isConnected) document.getElementById('settings').append(section);
    section.querySelector('#pwaStatus').textContent = (standalone() ? 'Uruchomiono jako aplikację. ' : '') + status;
-   section.querySelector('#pwaInstall').hidden = !installPrompt || standalone();
  }
  // Existing app renders settings after each data change. Reattach only when needed.
  const observer = new MutationObserver(() => { if (!section.isConnected) update();syncUpdateButton(); });
  observer.observe(document.getElementById('settings'), {childList:true});
  observer.observe(document.getElementById('about'), {childList:true});
  section.querySelector('#pwaInstall').onclick = async () => {
-   if (!installPrompt) return;
+   const help = section.querySelector('#pwaShortcutHelp');
+   const button = section.querySelector('#pwaInstall');
+   const appleHelp = section.querySelector('#pwaAppleHelp');
+   if (appleMobile && !standalone()) {
+     help.hidden = true;
+     appleHelp.hidden = !appleHelp.hidden;
+     button.setAttribute('aria-expanded', String(!appleHelp.hidden));
+     if (!appleHelp.hidden) appleHelp.scrollIntoView({block:'nearest'});
+     return;
+   }
+   appleHelp.hidden = true;
+   if (!installPrompt || standalone()) {
+     help.textContent = standalone() ? "Aplikacja jest już otwarta ze skrótu." : "Otwórz menu przeglądarki i wybierz Zainstaluj aplikację, Dodaj do ekranu głównego lub Utwórz skrót.";
+     help.hidden = !help.hidden;
+     button.setAttribute('aria-expanded', String(!help.hidden));
+     return;
+   }
+   help.hidden = true;
+   button.setAttribute('aria-expanded', 'false');
    const prompt = installPrompt; installPrompt = null; update();
    try { await prompt.prompt(); await prompt.userChoice; } catch { /* Installation remains optional. */ }
  };

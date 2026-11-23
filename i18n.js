@@ -2,6 +2,24 @@
 (() => {
  'use strict';
  const dictionary={
+ "Cena za litr (zł/l)": "Price per litre (PLN/L)",
+ "Pewność odczytu: wysoka": "Reading confidence: high",
+ "Pewność odczytu: średnia": "Reading confidence: medium",
+ "Pewność odczytu: niska — użyj przycisku, aby potwierdzić odczyt": "Reading confidence: low — use the button to confirm the reading",
+ "Odczytano kilka pozycji paliwa. Wybierz dane ręcznie.": "Multiple fuel items found. Select the values manually.",
+ "Brakującą wartość obliczono pomocniczo. Potwierdź ją przed użyciem.": "A missing value was calculated as a suggestion. Confirm it before use.",
+ "Suma paragonu obejmuje inne zakupy. Koszt tankowania pochodzi z pozycji paliwa.": "The receipt total includes other purchases. The refuelling cost comes from the fuel item.",
+ "Dokładniejszy odczyt pozycji paliwa, cena za litr do edycji i domyślny limit 984 zł.": "Improved fuel item parsing, editable price per litre, and a default budget of PLN 984.",
+ "Jak dodać Fuel Tracker do ekranu początkowego": "How to add Fuel Tracker to the Home Screen",
+ "W Safari stuknij przycisk udostępniania (kwadrat ze strzałką w górę). Jeśli go nie widzisz, otwórz menu strony i wybierz „Udostępnij”.": "In Safari, tap the Share button (the square with an upward arrow). If you do not see it, open the page menu and choose “Share”.",
+ "Przewiń listę i wybierz „Dodaj do ekranu początkowego”. Jeśli tej opcji brakuje, stuknij „Edytuj czynności” na dole listy i dodaj ją.": "Scroll down and choose “Add to Home Screen”. If it is missing, tap “Edit Actions” at the bottom of the list and add it.",
+ "Jeśli widzisz „Otwórz jako aplikację”, włącz tę opcję. Stuknij „Dodaj”.": "If you see “Open as Web App”, turn it on. Tap “Add”.",
+ "Na iPhonie przycisk skrótu pokazuje instrukcję dodania aplikacji w Safari.": "On iPhone, the shortcut button shows how to add the app in Safari.",
+ "Otwórz menu przeglądarki i wybierz Zainstaluj aplikację, Dodaj do ekranu głównego lub Utwórz skrót.": "Open the browser menu and select Install app, Add to Home screen, or Create shortcut.",
+ "Utwórz skrót na pulpicie": "Create desktop shortcut",
+ "Na iPhonie w Safari wybierz Udostępnij → Dodaj do ekranu początkowego. Na Androidzie lub komputerze otwórz menu przeglądarki i wybierz Zainstaluj aplikację, Dodaj do ekranu głównego lub Utwórz skrót.": "On iPhone, in Safari, select Share → Add to Home Screen. On Android or desktop, open the browser menu and select Install app, Add to Home screen, or Create shortcut.",
+ "Aplikacja jest już otwarta ze skrótu.": "The app is already open from a shortcut.",
+ "Dodano przycisk tworzenia skrótu w Ustawieniach.": "Added a shortcut button in Settings.",
  "Historia tego samego dnia pokazuje najpierw ostatnio dodany wpis. Edycja zachowuje kolejność.": "Entries on the same day show the most recently added first. Editing preserves their order.",
  "— Uzupełnione release notes i numer wersji oraz krótsze nagłówki Ustawień i About.": "— Updated release notes and version number, with more compact Settings and About headings.",
  "Uzupełnione release notes i numer wersji oraz krótsze nagłówki Ustawień i About.": "Updated release notes and version number, with more compact Settings and About headings.",
@@ -378,7 +396,7 @@
  const fragments=Object.entries(dictionary).filter(([s])=>s.length>=12).sort((a,b)=>b[0].length-a[0].length);
  const escape=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  const fragmentPattern=new RegExp(fragments.map(([s])=>escape(s)).join('|'),'g');
- const prefixes=[['Wersja v','Version v'],['Koszt:','Cost:'],['Paliwo:','Fuel:'],['Data:','Date:'],['Przebieg:','Odometer:'],['Odczytywanie paragonu:','Reading receipt:'],['Wybrano samochód:','Selected car:'],['Aktywny samochód:','Active car:'],['Nie zapisano:','Could not save:'],['Nie zaimportowano:','Import failed:'],['Powtórzona nazwa samochodu:','Duplicate car name:'],['Niepoprawna liczba kolumn w rekordzie','Invalid number of columns in record'],['Nieznany typ wiersza:','Unknown row type:'],['Zalogowano:','Signed in:'],['Dołącz:','Join:'],['Ostatnio:','Last synced:'],['Edytuj ','Edit '],['Usuń ','Delete '],['Adres ','Email address ']];
+ const prefixes=[['Cena za litr:','Price per litre:'],['Suma paragonu:','Receipt total:'],['Wersja v','Version v'],['Koszt:','Cost:'],['Paliwo:','Fuel:'],['Data:','Date:'],['Przebieg:','Odometer:'],['Odczytywanie paragonu:','Reading receipt:'],['Wybrano samochód:','Selected car:'],['Aktywny samochód:','Active car:'],['Nie zapisano:','Could not save:'],['Nie zaimportowano:','Import failed:'],['Powtórzona nazwa samochodu:','Duplicate car name:'],['Niepoprawna liczba kolumn w rekordzie','Invalid number of columns in record'],['Nieznany typ wiersza:','Unknown row type:'],['Zalogowano:','Signed in:'],['Dołącz:','Join:'],['Ostatnio:','Last synced:'],['Edytuj ','Edit '],['Usuń ','Delete '],['Adres ','Email address ']];
  function t(value){
   if(language!=='en')return value;
   return String(value).replace(/^(\s*)([\s\S]*?)(\s*)$/,(_,before,text,after)=>{
